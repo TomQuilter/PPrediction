@@ -6,7 +6,7 @@ from typing import Union
 
 from models.IterativeModel import IterativeModel
 from utils.metric_utils.calc_metric import calc_acc
- 
+
 class AbilityDifficultyVariationalInference(IterativeModel):
     def __init__(self, model_params):
         super().__init__(model_params)
@@ -30,7 +30,7 @@ class AbilityDifficultyVariationalInference(IterativeModel):
         Ss = torch.ones(S, requires_grad=True)    
         
         # Draw 1 sample for each (mean, std_dev) pair using the reparameterization trick
-        epsilon = torch.randn(S)  # samples from a standard normal (mean=0, std=1)   S = Number of STUDENTS
+        epsilon = torch.randn(S)  # samples from a standard normal (mean=0, std=1)
         bs = Ms + Ss * epsilon  # reparameterization trick
         print("bs2", bs)
 
@@ -39,7 +39,7 @@ class AbilityDifficultyVariationalInference(IterativeModel):
         last_epoch = iters
         prev_nll = 0
         for epoch in range(iters):
-            params = {'Ms': Ms, 'Ss': Ss, 'bq': bq} # {'bs': bs, 'bq': bq}
+            params = {'bs': bs, 'bq': bq}
 
             train_nll = self.calc_nll(train_ts, params)
             train_nll.backward()
@@ -65,17 +65,17 @@ class AbilityDifficultyVariationalInference(IterativeModel):
 
             # Gradient descent
             with torch.no_grad():
-                # bs -= rate * bs.grad  ## All Bs's updated, needs to be Mu and sigma now
-                Ms -= rate * Ms.grad
-                Ss -= rate * Ss.grad
+                bs -= rate * bs.grad  ## All Bs's updated, needs to be Mu and sigma now
+                #Ms -= rate * Ms.grad
+                #Ss -= rate * Ss.grad
                 bq -= rate * bq.grad
 
             # Zero gradients after updating
-            #bs.grad.zero_()
-            Ms.grad.zero_()
-            Ss.grad.zero_()
+            bs.grad.zero_()
+            #Ms.grad.zero_()
+            #Ss.grad.zero_()
             bq.grad.zero_()
- 
+
             train_nll_arr[epoch] = train_nll
             prev_nll = test_nll
 
@@ -85,21 +85,10 @@ class AbilityDifficultyVariationalInference(IterativeModel):
                     'train acc': np.trim_zeros(train_acc_arr, 'b'),
                     'val acc': np.trim_zeros(val_acc_arr, 'b'),
                     'test acc': np.trim_zeros(test_acc_arr, 'b')}    ### Bs = mu + here to change params to Ms and SS?
-        params = {'Ms': Ms, 'Ss': Ss, 'bq': bq} # {'bs': bs, 'bq': bq}
+        params = {'bs': bs, 'bq': bq}
         return params, history, last_epoch
-  
-    def calc_probit(self, data_ts, params):
-        print("params['Ms']",params['Ms'])
-        print("params['Ss']",params['Ss']) 
-        NumberofStudents = len(params['Ss'])
-        print("NumberofStudents",NumberofStudents)
-        #Draw 1 sample for each (mean, std_dev) pair using the reparameterization trick
-        epsilon = torch.randn(NumberofStudents)  # samples from a standard normal (mean=0, std=1)
-        params['bs'] = params['Ms'] + params['Ss'] * epsilon  # reparameterization trick
-        #print("bs2", bs)
-        print("params['bs']") 
-        print(params['bs'])
 
+    def calc_probit(self, data_ts, params):
         bs_data = torch.index_select(params['bs'], 0, data_ts[1])  ### Grab params['bs'] , grad MuS and SS and them generate no!?  
         print("bs_data") 
         print(bs_data)
@@ -107,7 +96,7 @@ class AbilityDifficultyVariationalInference(IterativeModel):
         ## So replace Bs with Mu and Sigma and generate the Bs's
         ## select with data_ts[1]) an issue here?? No just takes a certain bs value - bs is just a 1 by S list of numbers
         bq_data = torch.index_select(params['bq'], 0, data_ts[2])
- 
+
         probit_correct = torch.sigmoid(bs_data + bq_data)
 
         return probit_correct
