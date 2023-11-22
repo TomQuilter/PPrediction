@@ -9,7 +9,8 @@ from models.Interactive import Interactive
 from models.AbilityDifficultyVariationalInference import AbilityDifficultyVariationalInference
 
 
-print("HI22!")
+print("HI22Matty!") 
+print("What!") 
 split_config = 'default'
 
 # model_config = 'AbDif'
