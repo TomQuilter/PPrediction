@@ -21,7 +21,7 @@ def run(data_df, seed):
     data_df = shuffle_rows(data_df, shuffle_seed=seed, reset_index=False) # shuffle student order
     data_ts = torch.tensor(data_df.values)
 
-    first_quadrant_ts, train_question_ts, train_student_ts, test_ts = split_to_quadrants(data_ts, 0.5, 0.5)
+    first_quadrant_ts, train_question_ts, train_student_ts, test_ts = split_to_quadrants(data_ts, 0.95, 0.5)
     rng = torch.Generator()
     rng.manual_seed(seed)
     
